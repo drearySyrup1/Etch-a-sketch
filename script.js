@@ -10,7 +10,7 @@ function generateGrid(size) {
             block.style.height = `${boardHeight / size}px`
             block.style.backgroundColor = '#444';
             block.classList.add('block')
-            block.style.background = `white`
+            block.style.background = `rgb(255, 255, 255)`
             block.draggable = false;
     
             // for click coloring
@@ -21,6 +21,12 @@ function generateGrid(size) {
                     const b = rand();
                     paintColor = `rgb(${r},${g},${b})`
                     colorPicker.value = rgb2hex(paintColor);
+                }
+                if (darken) {
+                    paintColor = darkenMode(block);
+                }
+                if (lighten) {
+                    paintColor = lightenMode(block);
                 }
                 block.style.backgroundColor = paintColor;
             })
@@ -36,6 +42,12 @@ function generateGrid(size) {
                         const b = rand();
                         paintColor = `rgb(${r},${g},${b})`
                         colorPicker.value = rgb2hex(paintColor);
+                    }
+                    if (darken) {
+                        paintColor = darkenMode(block);
+                    }
+                    if (lighten) {
+                        paintColor = lightenMode(block);
                     }
                     block.style.backgroundColor = paintColor;
                     // console.log(e);
@@ -60,6 +72,35 @@ function generateGrid(size) {
     }
 }
 
+function darkenMode(block) {
+    const rgbColors = block.style.backgroundColor.match(/[0-9]+,\s*[0-9]+,\s*[0-9]+/g)[0].split(',');
+    let r = rgbColors[0];
+    let g = rgbColors[1];
+    let b = rgbColors[2];
+    console.log(`rgb(${r},${g},${b})`)
+    const darkenVal = 30;
+    r = ((r - darkenVal) >= 0) ? r - darkenVal : 0;
+    g = ((g - darkenVal) >= 0) ? g - darkenVal : 0;
+    b = ((b - darkenVal) >= 0) ? b - darkenVal : 0;
+    console.log(`rgb(${r},${g},${b})`)
+    return `rgb(${r},${g},${b})`
+}
+
+function lightenMode(block) {
+    const rgbColors = block.style.backgroundColor.match(/[0-9]+,\s*[0-9]+,\s*[0-9]+/g)[0].split(',');
+    let r = +rgbColors[0];
+    let g = +rgbColors[1];
+    let b = +rgbColors[2];
+    console.log(`rgb(${r},${g},${b})`)
+    const lightenVal = 30;
+    r = ((r + lightenVal) <= 255) ? r + lightenVal : 255;
+    g = ((g + lightenVal) <= 255) ? g + lightenVal : 255;
+    b = ((b + lightenVal) <= 255) ? b + lightenVal : 255;
+    console.log(`rgb(${r},${g},${b})`)
+    return `rgb(${r},${g},${b})`
+}
+
+
 // random color rgb value
 function rand() {
     return Math.floor(Math.random() * 256);
@@ -82,6 +123,9 @@ function gridOnFunc(on) {
 
 // MAIN VARIABLES
 
+
+const resetColorPicker = () => paintColor = colorPicker.value;
+
 const rgb2hex = (rgb) => `#${rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/).slice(1).map(n => parseInt(n, 10).toString(16).padStart(2, '0')).join('')}`
 
 const drawingBoard = document.getElementById('drawing-board');
@@ -90,10 +134,16 @@ const boardWidth = parseInt(getComputedStyle(drawingBoard)['height'])
 const boardHeight = parseInt(getComputedStyle(drawingBoard)['width'])
 const gridSize = document.getElementById('grid-size');
 const clearButton = document.getElementById('clear');
+const darkenButton = document.getElementById('darken');
+const lightenButton = document.getElementById('lighten');
+
 let currentGridSize = gridSize.value;
 const gridButton = document.getElementById('grid');
 let gridOn = false;
 let rainbowMode = false;
+let darken = false;
+let lighten = false;
+
 const colorPicker = document.getElementById('color-picker');
 const rainbowModeButton = document.getElementById('rainbow');
 let paintColor = colorPicker.value;
@@ -186,6 +236,14 @@ colorPicker.addEventListener('change', e => {
 
 //rainbow mode
 rainbowModeButton.addEventListener('click', () => {
+    if (darken) {
+        darken = false;
+        darkenButton.style.backgroundColor = 'white';
+        darkenButton.style.color = '#000';
+    } else if(lighten) {
+        lighten = false;
+        lightenButton.style.backgroundColor = 'white';
+    }
     if (!rainbowMode) {
         rainbowMode = true;
         colorPicker.disabled = true;
@@ -196,6 +254,52 @@ rainbowModeButton.addEventListener('click', () => {
         colorPicker.disabled = false;
         rainbowModeButton.style.backgroundColor = 'white';
 
+    }
+})
+
+//darken button
+darkenButton.addEventListener('click', () => {
+    if (lighten) {
+        lighten = false;
+        lightenButton.style.backgroundColor = 'white';
+    } else if (rainbowMode) {
+        rainbowMode = false;
+        rainbowModeButton.style.backgroundColor = 'white';
+    }
+    if (!darken) {
+        darken = true;
+        darkenButton.style.backgroundColor = '#333';
+        darkenButton.style.color = '#fff';
+        colorPicker.disabled = true;
+    } else {
+        darken = false;
+        colorPicker.disabled = false;
+        darkenButton.style.backgroundColor = 'white';
+        darkenButton.style.color = '#000';
+        resetColorPicker();
+    }
+})
+
+//ligthen button
+lightenButton.addEventListener('click', () => {
+    if (darken) {
+        darken = false;
+        darkenButton.style.backgroundColor = 'white';
+        darkenButton.style.color = '#000';
+    } else if (rainbowMode) {
+        rainbowMode = false;
+        rainbowModeButton.style.backgroundColor = 'white';
+    }
+    if (!lighten) {
+        lighten = true;
+        lightenButton.style.backgroundColor = '#AAA';
+        colorPicker.disabled = true;
+    } else {
+        lighten = false;
+        colorPicker.disabled = false;
+        lightenButton.style.backgroundColor = 'white';
+        resetColorPicker();
+        console.log(colorPicker)
     }
 })
 
