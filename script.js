@@ -10,10 +10,8 @@ function generateGrid(size) {
             block.style.height = `${boardHeight / size}px`
             block.style.backgroundColor = '#444';
             block.classList.add('block')
-            // block.style.background = `rgb(${r}, ${g}, ${b})`
             block.style.background = `white`
             block.draggable = false;
-            // block.style.outline = `1px solid #000`;
     
             // for click coloring
             block.addEventListener('click', e => {
@@ -30,13 +28,8 @@ function generateGrid(size) {
             
             // for drag colloring
             block.addEventListener('mouseover', e => {
-                //resetting righ mouse to not pressed
-                // if mouseDown if false
-                if (!mouseDown) {
-                    rightMouse = false;
-                }
 
-                if (mouseDown && rightMouse !== true) {
+                if (leftMouse && mouseDown) {
                     if (rainbowMode) {
                         const r = rand();
                         const g = rand();
@@ -48,18 +41,15 @@ function generateGrid(size) {
                     // console.log(e);
                 }
 
-                // right mouse delete
+                // right mouse drag delete
                 if (mouseDown && rightMouse) {
                     block.style.backgroundColor = 'white';
                 }
             })
 
-            // preventing context menu and
-            // setting mouse down to true
-            // and right click delete
+            // preventing context menu and click delete
             block.addEventListener('contextmenu', e => {
                 e.preventDefault();
-                rightMouse = true;
                 block.style.backgroundColor = 'white';
                 
             })
@@ -70,7 +60,7 @@ function generateGrid(size) {
     }
 }
 
-
+// random color rgb value
 function rand() {
     return Math.floor(Math.random() * 256);
 }
@@ -115,20 +105,35 @@ gridSizeLabel.textContent = `${currentGridSize} x ${currentGridSize}`
 
 
 let rightMouse= false;
+let leftMouse = false;
 let mouseDown = false;
 
-// drawingBoard.addEventListener('contextmenu', e => {
-//     e.preventDefault();
-//     rightMouse = mouseDown && true;
-// })
 
-// to check if dragging
+// next 2 event listeners
+// track: mouse left, right clicks
+// when those clicks are being held down
 window.addEventListener('mousedown', e => {
     mouseDown = true;
+    switch (e.button) {
+        case 0:
+            leftMouse = true;
+            break;
+        case 2:
+            rightMouse = true;
+            break;
+    }
 })
 
 window.addEventListener('mouseup', e => {
     mouseDown = false;
+    switch (e.button) {
+        case 0:
+            leftMouse = false;
+            break;
+        case 2:
+            rightMouse = false;
+            break;
+    }
 })
 
 
