@@ -1,19 +1,22 @@
 function generateGrid(size) {
     drawingBoard.innerHTML = '';
+    let id = 0;
     for (let i = 0; i < size; i++) {
         const row = document.createElement('div');
         row.classList.add('row');
+        row.dataset.id = i;
         drawingBoard.append(row);
         for (let j = 0; j < size; j++) {
+            id++;
             const block = document.createElement('div');
             block.style.width = `${boardWidth / size}px`
             block.style.height = `${boardHeight / size}px`
-            block.style.backgroundColor = '#444';
             block.classList.add('block')
             block.style.background = `rgb(255, 255, 255)`
             block.draggable = false;
             block.dataset.filled = false;
-    
+            block.dataset.id = id;
+
             // for click coloring
             block.addEventListener('click', e => {
                 if (rainbowMode) {
@@ -25,9 +28,13 @@ function generateGrid(size) {
                 if (lighten) {
                     paintColor = lightenMode(block);
                 }
+                if (fillMode) {
+                    fillModeFunction2(block, block.parentElement);
+                    fillBtnReset();
+                }
                 const filledStatus = block.dataset.filled
 
-                if (!filledStatus) {
+                if (filledStatus === 'false') {
                     block.dataset.filled = true;
                     block.style.backgroundColor = paintColor;
                 }
@@ -64,7 +71,7 @@ function generateGrid(size) {
                 // right mouse drag delete
                 if (mouseDown && rightMouse) {
                     block.dataset.filled = false;
-                    block.style.backgroundColor = 'white';
+                    block.style.backgroundColor = 'rgb(255, 255, 255)';
                 }
             })
 
@@ -72,7 +79,7 @@ function generateGrid(size) {
             block.addEventListener('contextmenu', e => {
                 e.preventDefault();
                 block.dataset.filled = false;
-                block.style.backgroundColor = 'white';
+                block.style.backgroundColor = 'rgb(255, 255, 255)';
                 
             })
 
@@ -116,12 +123,53 @@ function lightenMode(block) {
     r = ((r + lightenVal) <= 255) ? r + lightenVal : 255;
     g = ((g + lightenVal) <= 255) ? g + lightenVal : 255;
     b = ((b + lightenVal) <= 255) ? b + lightenVal : 255;
-    console.log(`rgb(${r},${g},${b})`)
     return `rgb(${r},${g},${b})`
 }
 
-
 // random color rgb value
+
+function fillModeFunction2(block) {
+
+    pixels = [];
+    drawingBoard.childNodes.forEach(row => {
+        const rowAppend = []
+        row.childNodes.forEach(block => {
+            rowAppend.push(block);
+        });
+        pixels.push(rowAppend);
+    })
+
+    function whatrow(blockid) {
+        grid = gridSize.value;
+        totalSize = grid**2;
+        
+        return (grid - 1) - Math.floor((totalSize - blockid) / gridSize.value)
+
+    }
+    let grid = gridSize.value - 1;
+    let i = whatrow(block.dataset.id);
+    let j = pixels[i].indexOf(block);
+
+    function dfs(pixels, i, j) {
+        if (i >= grid || j >= grid || i < 0 || j < 0) {
+            return;
+        } else {
+            // let blockcolor = rgb2hex(pixels[i][j].style.backgroundColor);
+            // let color = paintColor;
+            if (pixels[i][j].dataset.filled === 'true') return;
+            pixels[i][j].style.backgroundColor = colorPicker.value;
+            pixels[i][j].dataset.filled = 'true';
+            dfs(pixels, i - 1, j); //top
+            dfs(pixels, i, j - 1); //left
+            dfs(pixels, i + 1, j); //bot
+            dfs(pixels, i, j + 1); //right
+        }
+    }
+
+    dfs(pixels, i, j);
+
+}
+
 function rand() {
     return Math.floor(Math.random() * 256);
 }
@@ -141,6 +189,14 @@ function gridOnFunc(on) {
     }
 }
 
+function fillBtnReset() {
+    fillMode = false;
+    fillButton.style.backgroundColor = 'white';
+}
+
+
+
+
 // MAIN VARIABLES
 
 
@@ -157,6 +213,7 @@ const clearButton = document.getElementById('clear');
 const darkenButton = document.getElementById('darken');
 const lightenButton = document.getElementById('lighten');
 const strictButton = document.getElementById('strict');
+const fillButton = document.getElementById('fill');
 
 let currentGridSize = gridSize.value;
 const gridButton = document.getElementById('grid');
@@ -165,6 +222,8 @@ let rainbowMode = false;
 let darken = false;
 let lighten = false;
 let strictMode = false;
+let fillMode = false;
+let currentRow = null;
 
 const colorPicker = document.getElementById('color-picker');
 const rainbowModeButton = document.getElementById('rainbow');
@@ -334,14 +393,15 @@ strictButton.addEventListener('click', () => {
     }
 })
 
-
-// for testing ONLY what is being dragged
-// document.body.childNodes.forEach(item => {
-//     item.addEventListener('drag', e => {
-//         console.log(e.target);
-//     })
-// })
-
+fillButton.addEventListener('click', () => {
+    if (!fillMode) {
+        fillMode = true;
+        fillButton.style.backgroundColor = 'red';
+    } else {
+        fillMode = false;
+        fillButton.style.backgroundColor = 'white';
+    }
+});
 
 
 
