@@ -12,15 +12,12 @@ function generateGrid(size) {
             block.classList.add('block')
             block.style.background = `rgb(255, 255, 255)`
             block.draggable = false;
+            block.dataset.filled = false;
     
             // for click coloring
             block.addEventListener('click', e => {
                 if (rainbowMode) {
-                    const r = rand();
-                    const g = rand();
-                    const b = rand();
-                    paintColor = `rgb(${r},${g},${b})`
-                    colorPicker.value = rgb2hex(paintColor);
+                    paintColor = rainbowModeFunction();
                 }
                 if (darken) {
                     paintColor = darkenMode(block);
@@ -28,7 +25,12 @@ function generateGrid(size) {
                 if (lighten) {
                     paintColor = lightenMode(block);
                 }
-                block.style.backgroundColor = paintColor;
+                const filledStatus = block.dataset.filled
+
+                if (!filledStatus) {
+                    block.dataset.filled = true;
+                    block.style.backgroundColor = paintColor;
+                }
             })
 
             
@@ -37,11 +39,7 @@ function generateGrid(size) {
 
                 if (leftMouse && mouseDown) {
                     if (rainbowMode) {
-                        const r = rand();
-                        const g = rand();
-                        const b = rand();
-                        paintColor = `rgb(${r},${g},${b})`
-                        colorPicker.value = rgb2hex(paintColor);
+                        paintColor = rainbowModeFunction();
                     }
                     if (darken) {
                         paintColor = darkenMode(block);
@@ -49,12 +47,23 @@ function generateGrid(size) {
                     if (lighten) {
                         paintColor = lightenMode(block);
                     }
-                    block.style.backgroundColor = paintColor;
-                    // console.log(e);
+                    if (strictMode && !(darken || lighten)) {
+                        const filledStatus = block.dataset.filled
+                        console.log(filledStatus)
+                        if (filledStatus === 'false') {
+                            block.dataset.filled = true;
+                            block.style.backgroundColor = paintColor;
+                        }
+                    } else {
+                        block.dataset.filled = true;
+                        block.style.backgroundColor = paintColor;
+                    }
+                    
                 }
 
                 // right mouse drag delete
                 if (mouseDown && rightMouse) {
+                    block.dataset.filled = false;
                     block.style.backgroundColor = 'white';
                 }
             })
@@ -62,6 +71,7 @@ function generateGrid(size) {
             // preventing context menu and click delete
             block.addEventListener('contextmenu', e => {
                 e.preventDefault();
+                block.dataset.filled = false;
                 block.style.backgroundColor = 'white';
                 
             })
@@ -70,6 +80,16 @@ function generateGrid(size) {
             row.append(block);
         }
     }
+}
+
+
+function rainbowModeFunction() {
+    const r = rand();
+    const g = rand();
+    const b = rand();
+    paintColor = `rgb(${r},${g},${b})`
+    colorPicker.value = rgb2hex(paintColor);
+    return paintColor;
 }
 
 function darkenMode(block) {
@@ -136,6 +156,7 @@ const gridSize = document.getElementById('grid-size');
 const clearButton = document.getElementById('clear');
 const darkenButton = document.getElementById('darken');
 const lightenButton = document.getElementById('lighten');
+const strictButton = document.getElementById('strict');
 
 let currentGridSize = gridSize.value;
 const gridButton = document.getElementById('grid');
@@ -143,6 +164,7 @@ let gridOn = false;
 let rainbowMode = false;
 let darken = false;
 let lighten = false;
+let strictMode = false;
 
 const colorPicker = document.getElementById('color-picker');
 const rainbowModeButton = document.getElementById('rainbow');
@@ -299,9 +321,19 @@ lightenButton.addEventListener('click', () => {
         colorPicker.disabled = false;
         lightenButton.style.backgroundColor = 'white';
         resetColorPicker();
-        console.log(colorPicker)
     }
 })
+
+strictButton.addEventListener('click', () => {
+    if (!strictMode) {
+        strictMode = true;
+        strictButton.style.backgroundColor = 'red';
+    } else {
+        strictMode = false;
+        strictButton.style.backgroundColor = 'white';
+    }
+})
+
 
 // for testing ONLY what is being dragged
 // document.body.childNodes.forEach(item => {
