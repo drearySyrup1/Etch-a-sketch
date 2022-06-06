@@ -76,6 +76,14 @@ body {
 }
 
 
+/*
+for development and testing 
+.block {
+    color: red;
+    text-align: center;
+    border: 1px solid black;
+} */
+
 #drawing-board {
     flex-shrink: 1;
     width: 500px;

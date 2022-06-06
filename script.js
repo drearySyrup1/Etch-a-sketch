@@ -16,70 +16,50 @@ function generateGrid(size) {
             block.draggable = false;
             block.dataset.filled = false;
             block.dataset.id = id;
+            // for development and testing
+            // block.innerText = id;
+
+            // disable hover click
+            // block.addEventListener('', () => {
+            // })
 
             // for click coloring
-            block.addEventListener('click', e => {
-                if (rainbowMode) {
-                    paintColor = rainbowModeFunction();
-                }
-                if (darken) {
-                    paintColor = darkenMode(block);
-                }
-                if (lighten) {
-                    paintColor = lightenMode(block);
-                }
+            block.addEventListener('mousedown', e => {
+                hoverColor(block, true);
+
                 if (fillMode) {
                     fillModeFunction2(block, block.parentElement);
                     fillBtnReset();
-                }
-                const filledStatus = block.dataset.filled
-
-                if (filledStatus === 'false') {
-                    block.dataset.filled = true;
-                    block.style.backgroundColor = paintColor;
+                } else {
+                    paint(block, brushSize);
                 }
             })
 
             
             // for drag colloring
             block.addEventListener('mouseover', e => {
+                if (!mouseDown) hoverColor(block); 
+                
 
                 if (leftMouse && mouseDown) {
-                    if (rainbowMode) {
-                        paintColor = rainbowModeFunction();
-                    }
-                    if (darken) {
-                        paintColor = darkenMode(block);
-                    }
-                    if (lighten) {
-                        paintColor = lightenMode(block);
-                    }
-                    if (strictMode && !(darken || lighten)) {
-                        const filledStatus = block.dataset.filled
-                        console.log(filledStatus)
-                        if (filledStatus === 'false') {
-                            block.dataset.filled = true;
-                            block.style.backgroundColor = paintColor;
-                        }
-                    } else {
-                        block.dataset.filled = true;
-                        block.style.backgroundColor = paintColor;
-                    }
-                    
+                        paint(block, brushSize);
                 }
 
                 // right mouse drag delete
                 if (mouseDown && rightMouse) {
-                    block.dataset.filled = false;
-                    block.style.backgroundColor = 'rgb(255, 255, 255)';
+                    paint(block, brushSize, true);
                 }
+            })
+
+            block.addEventListener('mouseleave', e => {
+                hoverColor(block, true);
+                restoreColors = [];
             })
 
             // preventing context menu and click delete
             block.addEventListener('contextmenu', e => {
                 e.preventDefault();
-                block.dataset.filled = false;
-                block.style.backgroundColor = 'rgb(255, 255, 255)';
+                paint(block, brushSize, true);
                 
             })
 
@@ -99,27 +79,24 @@ function rainbowModeFunction() {
     return paintColor;
 }
 
-function darkenMode(block) {
+function darkenMode(block, amt=30) {
     const rgbColors = block.style.backgroundColor.match(/[0-9]+,\s*[0-9]+,\s*[0-9]+/g)[0].split(',');
     let r = rgbColors[0];
     let g = rgbColors[1];
     let b = rgbColors[2];
-    console.log(`rgb(${r},${g},${b})`)
-    const darkenVal = 30;
+    const darkenVal = amt;
     r = ((r - darkenVal) >= 0) ? r - darkenVal : 0;
     g = ((g - darkenVal) >= 0) ? g - darkenVal : 0;
     b = ((b - darkenVal) >= 0) ? b - darkenVal : 0;
-    console.log(`rgb(${r},${g},${b})`)
     return `rgb(${r},${g},${b})`
 }
 
-function lightenMode(block) {
+function lightenMode(block, amt=30) {
     const rgbColors = block.style.backgroundColor.match(/[0-9]+,\s*[0-9]+,\s*[0-9]+/g)[0].split(',');
     let r = +rgbColors[0];
     let g = +rgbColors[1];
     let b = +rgbColors[2];
-    console.log(`rgb(${r},${g},${b})`)
-    const lightenVal = 30;
+    const lightenVal = amt;
     r = ((r + lightenVal) <= 255) ? r + lightenVal : 255;
     g = ((g + lightenVal) <= 255) ? g + lightenVal : 255;
     b = ((b + lightenVal) <= 255) ? b + lightenVal : 255;
@@ -128,24 +105,37 @@ function lightenMode(block) {
 
 // random color rgb value
 
-function fillModeFunction2(block) {
-
+function generatePixelMatrix() {
     pixels = [];
-    drawingBoard.childNodes.forEach(row => {
-        const rowAppend = []
-        row.childNodes.forEach(block => {
-            rowAppend.push(block);
-        });
-        pixels.push(rowAppend);
-    })
+        drawingBoard.childNodes.forEach(row => {
+            const rowAppend = []
+            row.childNodes.forEach(block => {
+                rowAppend.push(block);
+            });
+            pixels.push(rowAppend);
+        })
+    return pixels;
+}
+
+function whatrow(blockid) {
+    grid = gridSize.value;
+    totalSize = grid**2;
+    
+    return (grid - 1) - Math.floor((totalSize - blockid) / gridSize.value)
+}
+
+function fillModeFunction2(block) {
+        
+    const pixels = generatePixelMatrix();
 
     function whatrow(blockid) {
         grid = gridSize.value;
         totalSize = grid**2;
         
         return (grid - 1) - Math.floor((totalSize - blockid) / gridSize.value)
-
     }
+    
+
     let grid = gridSize.value - 1;
     let i = whatrow(block.dataset.id);
     let j = pixels[i].indexOf(block);
@@ -167,6 +157,7 @@ function fillModeFunction2(block) {
     }
 
     dfs(pixels, i, j);
+    restoreColors = [];
 
 }
 
@@ -194,7 +185,238 @@ function fillBtnReset() {
     fillButton.style.backgroundColor = 'white';
 }
 
+function paint(block, brushSize, deleteMode=false) {
+    
+    const pixels = generatePixelMatrix();
+    let i = whatrow(block.dataset.id);
+    let j = pixels[i].indexOf(block);
+    let min = 0;
+    let max = gridSize.value - 1;
+    
+    for (let k = 0; k < brushSize; k++) {
+        if (i+k > max || i+k < min) continue;
+        for (l = 0; l < brushSize; l++) {
+            if (j+l > max || j+l < min) continue;
+            const block = pixels[i+k][j+l];
+            if (deleteMode) {
+                block.dataset.filled = false;
+                block.style.backgroundColor = 'rgb(255, 255, 255)';
+                restoreColors = [];
+            } else {
+                if (rainbowMode) {
+                    paintColor = rainbowModeFunction();
+                }
+                if (darken) {
+                    paintColor = darkenMode(block);
+                }
+                if (lighten) {
+                    paintColor = lightenMode(block);
+                }
+                if (strictMode && !(darken || lighten)) {
+                    const filledStatus = block.dataset.filled
+                    console.log(filledStatus)
+                    if (filledStatus === 'false') {
+                        block.dataset.filled = true;
+                        block.style.backgroundColor = paintColor;
+                        restoreColors = [];
+                    }
+                } else {
+                    restoreColors = [];
+                    block.dataset.filled = true;
+                    block.style.backgroundColor = paintColor;
+                }
+            }
+        }
+    }
+}
 
+function enableMode(mode, enable=true) {
+    switch (mode) {
+        case"rainbow":
+            if (enable) {
+                rainbowMode = true;
+                colorPicker.disabled = true;
+                rainbowModeButton.style.backgroundColor = 'red';
+            } else {
+                rainbowMode = false;
+                colorPicker.disabled = false;
+                rainbowModeButton.style.backgroundColor = 'white';
+            }
+        break;
+        case"darken":
+            if (enable) {
+                darken = true;
+                darkenButton.style.backgroundColor = '#333';
+                darkenButton.style.color = '#fff';
+                colorPicker.disabled = true;
+            } else {
+                darken = false;
+                colorPicker.disabled = false;
+                darkenButton.style.backgroundColor = 'white';
+                darkenButton.style.color = '#000';
+                resetColorPicker();
+            }
+        break;
+        case"lighten":
+            if (enable) {
+                lighten = true;
+                lightenButton.style.backgroundColor = '#AAA';
+                colorPicker.disabled = true;
+            } else {
+                lighten = false;
+                colorPicker.disabled = false;
+                lightenButton.style.backgroundColor = 'white';
+                resetColorPicker();
+            }
+        break;
+        case"strict":
+            if (enable) {
+                strictMode = true;
+                strictButton.style.backgroundColor = 'red';
+            } else {
+                strictMode = false;
+                strictButton.style.backgroundColor = 'white';
+            }
+        break;
+        case"fill":
+            if (enable) {
+                fillMode = true;
+                fillButton.style.backgroundColor = 'red';
+            } else {
+                fillMode = false;
+                fillButton.style.backgroundColor = 'white';
+            }
+    }
+    
+}
+
+
+function hoverColor(block, restore=false) {
+    const pixels = generatePixelMatrix();
+    let i = whatrow(block.dataset.id);
+    let j = pixels[i].indexOf(block);
+    let min = 0;
+    let max = gridSize.value - 1;
+    
+    let itterTrack = -1;
+
+    for (let k = 0; k < brushSize; k++) {
+        if (i+k > max || i+k < min) continue;
+        for (l = 0; l < brushSize; l++) {
+            if (j+l > max || j+l < min) continue;
+            const block = pixels[i+k][j+l];
+            itterTrack++;
+
+            if (restore) {
+                console.log(itterTrack);
+                if (restoreColors.lenght === 0) break;
+                // restoreColors[itterTrack].element.style.backgroundColor = restoreColors[0].color;
+                restoreColors.forEach(object => {
+                    object.element.style.backgroundColor = object.color;
+                })
+                restoreColors = [];
+            } else {
+                restoreColors.push({
+                    element: block,
+                    color: block.style.backgroundColor
+                });
+                // block.style.backgroundColor = 'rgb(40,40,40)';
+                let currentColor = block.style.backgroundColor;
+                let hsl = rgbToHsl(currentColor);
+                if (hsl['L'] >= 100) {
+                    block.style.backgroundColor = darkenMode(block, 100);
+                } else {
+                    block.style.backgroundColor = lightenMode(block, 100);
+                }
+            }
+        }
+    }
+}
+
+
+
+// HELPER FUNCS
+function rgbToHsl(color) {
+    let rgbColors = color.match(/[0-9]+,\s*[0-9]+,\s*[0-9]+/g)[0].split(',');
+    rgbColors = rgbColors.map(c => +c);
+
+    rgbColors = {
+        R:rgbColors[0],
+        G:rgbColors[1],
+        B:rgbColors[2]
+    }
+
+    range = {}
+
+    for (color in rgbColors) {
+        range[color] = Math.round((rgbColors[color] / 255) * 100) / 100;
+    }
+
+    function findMinMax() {
+        min = Infinity;
+        max = -Infinity;
+        minMax = {}
+        for (color in range) {
+            if (range[color] < min) {
+                min = range[color];
+                minMax['min'] = {[color]: range[color]};
+            }
+        }
+
+        for (color in range) {
+            if (range[color] > max) {
+                min = range[color];
+                minMax['max'] = {[color]: range[color]};
+            }
+        }
+
+        return minMax;
+    }
+
+    minMax = findMinMax();
+
+    minKey = Object.keys(minMax['min']);
+    maxKey = Object.keys(minMax['max']);
+    minVal = minMax['min'][minKey];
+    maxVal = minMax['max'][maxKey]
+
+    let L = Math.round((minVal + maxVal) / 2 * 100);
+
+    let S = 0;
+
+    if (!(minVal === maxVal) ||
+        !(rgbColors['R'] === rgbColors['G'] &&
+          rgbColors['R'] === rgbColors['B'])) {
+            if (L/100 <= 0.5) {
+                S = Math.round(((maxVal - minVal) / (maxVal + minVal) * 100))
+            } else {
+                S = Math.round(((maxVal - minVal) / (2.0 - maxVal - minVal) * 100))
+            }
+        }
+
+
+    let H = 0;
+
+
+    if (S !== 0) {
+        if (maxKey[0] === 'R') {
+            H = range['G'] - range['B'] / (maxVal - minVal);
+        } else if (maxKey[0] === 'G') {
+            H = 2.0 + (range['B'] - range['R']) / (maxVal - minVal);
+        } else if (maxKey[0] === 'B') {
+            H = 4.0 + (range['R'] - range['G']) / (maxVal - minVal);
+        }
+    }
+
+    H  = Math.round((Math.round(H * 100) / 100) * 60)
+
+    // return `hsl(${H}, ${S}%, ${L}%)`;
+    return {
+        H:H,
+        S:S,
+        L:L
+    }
+}
 
 
 // MAIN VARIABLES
@@ -214,7 +436,11 @@ const darkenButton = document.getElementById('darken');
 const lightenButton = document.getElementById('lighten');
 const strictButton = document.getElementById('strict');
 const fillButton = document.getElementById('fill');
+const brushSizeField = document.getElementById('brush-size');
 
+
+let restoreColors = []
+let brushSize = brushSizeField.value;
 let currentGridSize = gridSize.value;
 const gridButton = document.getElementById('grid');
 let gridOn = false;
@@ -318,89 +544,67 @@ colorPicker.addEventListener('change', e => {
 //rainbow mode
 rainbowModeButton.addEventListener('click', () => {
     if (darken) {
-        darken = false;
-        darkenButton.style.backgroundColor = 'white';
-        darkenButton.style.color = '#000';
+        enableMode('darken', false);
     } else if(lighten) {
-        lighten = false;
-        lightenButton.style.backgroundColor = 'white';
+        enableMode('lighten', false);
     }
     if (!rainbowMode) {
-        rainbowMode = true;
-        colorPicker.disabled = true;
-
-        rainbowModeButton.style.backgroundColor = 'red';
+        enableMode('rainbow');
     } else {
-        rainbowMode = false;
-        colorPicker.disabled = false;
-        rainbowModeButton.style.backgroundColor = 'white';
-
+        enableMode('rainbow', false);
     }
 })
 
 //darken button
 darkenButton.addEventListener('click', () => {
     if (lighten) {
-        lighten = false;
-        lightenButton.style.backgroundColor = 'white';
+        enableMode('lighten', false);
     } else if (rainbowMode) {
-        rainbowMode = false;
-        rainbowModeButton.style.backgroundColor = 'white';
+        enableMode('rainbow', false);
     }
     if (!darken) {
-        darken = true;
-        darkenButton.style.backgroundColor = '#333';
-        darkenButton.style.color = '#fff';
-        colorPicker.disabled = true;
+        enableMode('darken');
     } else {
-        darken = false;
-        colorPicker.disabled = false;
-        darkenButton.style.backgroundColor = 'white';
-        darkenButton.style.color = '#000';
-        resetColorPicker();
+        enableMode('darken', false);
     }
 })
 
 //ligthen button
 lightenButton.addEventListener('click', () => {
     if (darken) {
-        darken = false;
-        darkenButton.style.backgroundColor = 'white';
-        darkenButton.style.color = '#000';
+        enableMode('darken', false);
     } else if (rainbowMode) {
-        rainbowMode = false;
-        rainbowModeButton.style.backgroundColor = 'white';
+        enableMode('rainbow', false);
     }
     if (!lighten) {
-        lighten = true;
-        lightenButton.style.backgroundColor = '#AAA';
-        colorPicker.disabled = true;
+        enableMode('lighten');
     } else {
-        lighten = false;
-        colorPicker.disabled = false;
-        lightenButton.style.backgroundColor = 'white';
-        resetColorPicker();
+        enableMode('lighten', false);
     }
 })
 
 strictButton.addEventListener('click', () => {
     if (!strictMode) {
-        strictMode = true;
-        strictButton.style.backgroundColor = 'red';
+        enableMode('strict');
     } else {
-        strictMode = false;
-        strictButton.style.backgroundColor = 'white';
+        enableMode('strict', false);
     }
 })
 
 fillButton.addEventListener('click', () => {
     if (!fillMode) {
-        fillMode = true;
-        fillButton.style.backgroundColor = 'red';
+        enableMode('fill');
+        enableMode('rainbow', false);
+        enableMode('strict', false);
+        enableMode('lighten', false);
+        enableMode('darken', false);
     } else {
-        fillMode = false;
-        fillButton.style.backgroundColor = 'white';
+        enableMode('fill', false);
     }
+});
+
+brushSizeField.addEventListener('change', () => {
+    brushSize = brushSizeField.value;
 });
 
 
