@@ -56,12 +56,15 @@ function generateGrid(size,resArr=null,restore=false) {
                 
 
                 if (leftMouse && mouseDown) {
+                        hoverColor(block, true);
                         paint(block, brushSize);
                         hoverColor(block); 
                 }
 
                 // right mouse drag delete
                 if (mouseDown && rightMouse) {
+                    hoverColor(block, true);
+
                     paint(block, brushSize, true);
                     hoverColor(block); 
                 }
@@ -115,7 +118,7 @@ function rainbowModeFunction() {
     return paintColor;
 }
 
-function darkenMode(block, amt=30) {
+function darkenMode(block, amt=20) {
     const rgbColors = block.style.backgroundColor.match(/[0-9]+,\s*[0-9]+,\s*[0-9]+/g)[0].split(',');
     let r = rgbColors[0];
     let g = rgbColors[1];
@@ -127,7 +130,7 @@ function darkenMode(block, amt=30) {
     return `rgb(${r},${g},${b})`
 }
 
-function lightenMode(block, amt=30) {
+function lightenMode(block, amt=20) {
     const rgbColors = block.style.backgroundColor.match(/[0-9]+,\s*[0-9]+,\s*[0-9]+/g)[0].split(',');
     let r = +rgbColors[0];
     let g = +rgbColors[1];
@@ -194,6 +197,7 @@ function fillModeFunction2(block) {
 
     dfs(pixels, i, j);
     restoreColors = [];
+    save();
 
 }
 
@@ -244,13 +248,14 @@ function paint(block, brushSize, deleteMode=false) {
                 }
                 if (darken) {
                     paintColor = darkenMode(block);
+                    
                 }
                 if (lighten) {
                     paintColor = lightenMode(block);
                 }
                 if (strictMode && !(darken || lighten)) {
+                    
                     const filledStatus = block.dataset.filled
-                    console.log(filledStatus)
                     if (filledStatus === 'false') {
                         block.dataset.filled = true;
                         block.style.backgroundColor = paintColor;
@@ -264,7 +269,6 @@ function paint(block, brushSize, deleteMode=false) {
             }
         }
     }
-    save();
 }
 
 function enableMode(mode, enable=true) {
@@ -335,19 +339,15 @@ function hoverColor(block, restore=false) {
     let min = 0;
     let max = gridSize.value - 1;
     
-    let itterTrack = -1;
 
     for (let k = 0; k < brushSize; k++) {
         if (i+k > max || i+k < min) continue;
         for (l = 0; l < brushSize; l++) {
             if (j+l > max || j+l < min) continue;
             const block = pixels[i+k][j+l];
-            itterTrack++;
 
             if (restore) {
-                console.log(itterTrack);
                 if (restoreColors.lenght === 0) break;
-                // restoreColors[itterTrack].element.style.backgroundColor = restoreColors[0].color;
                 restoreColors.forEach(object => {
                     object.element.style.backgroundColor = object.color;
                 })
@@ -534,7 +534,6 @@ window.addEventListener('mouseup', e => {
 // generating new grid with slider
 gridSize.addEventListener('input', e => {
     currentGridSize = gridSize.value;
-    console.log(currentGridSize)
     generateGrid(currentGridSize);
 gridSizeLabel.textContent = `${currentGridSize} x ${currentGridSize}`
 
@@ -645,8 +644,9 @@ brushSizeField.addEventListener('change', () => {
     brushSize = brushSizeField.value;
 });
 
+drawingBoard.addEventListener('mouseup', () => save())
 
-
+// load image or gennew
 if(localStorage.getItem('board') !== null) {
     const pix = JSON.parse(localStorage.getItem('board'));
     gridSize.value = pix['grid'];
