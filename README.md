@@ -1,6 +1,7 @@
 # Etch-a-sketch
 
 ## Simple Drawing app.
+[Live Preview](https://drearysyrup1.github.io/Etch-a-sketch/)
 ## Features:
 - Grid size 2x2 to 100x100.
 - 5 Brush Sizes
