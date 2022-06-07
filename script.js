@@ -1,4 +1,4 @@
-function generateGrid(size) {
+function generateGrid(size,resArr=null,restore=false) {
     drawingBoard.innerHTML = '';
     let id = 0;
     for (let i = 0; i < size; i++) {
@@ -7,15 +7,30 @@ function generateGrid(size) {
         row.dataset.id = i;
         drawingBoard.append(row);
         for (let j = 0; j < size; j++) {
-            id++;
-            const block = document.createElement('div');
-            block.style.width = `${boardWidth / size}px`
-            block.style.height = `${boardHeight / size}px`
-            block.classList.add('block')
-            block.style.background = `rgb(255, 255, 255)`
-            block.draggable = false;
-            block.dataset.filled = false;
-            block.dataset.id = id;
+
+
+                const block = document.createElement('div');
+                block.style.width = `${boardWidth / size}px`
+                block.style.height = `${boardHeight / size}px`
+                block.classList.add('block')
+                block.draggable = false;
+                
+                if (restore) {
+
+                    block.style.background = resArr['board'][id].color;
+                    
+                    block.dataset.filled = resArr['board'][id].filled;
+                    block.dataset.id = resArr['board'][id].id;
+                } else {
+
+                    block.style.background = `rgb(255, 255, 255)`
+                    block.dataset.filled = false;
+                    block.dataset.id = id;
+                }
+                     id++;
+
+
+                
             // for development and testing
             // block.innerText = id;
 
@@ -68,6 +83,26 @@ function generateGrid(size) {
             row.append(block);
         }
     }
+}
+
+function save() {
+    const board = generatePixelMatrix();
+    const saveBoard = {
+        grid: gridSize.value,
+        board: []
+    };
+    board.forEach(i => {
+        i.forEach(j => {
+            const block = {
+                id: j.dataset.id,
+                filled: j.dataset.filled,
+                color: j.style.backgroundColor
+            }
+            saveBoard['board'].push(block);
+        })
+    })
+
+    localStorage.setItem('board', JSON.stringify(saveBoard));
 }
 
 
@@ -229,6 +264,7 @@ function paint(block, brushSize, deleteMode=false) {
             }
         }
     }
+    save();
 }
 
 function enableMode(mode, enable=true) {
@@ -512,6 +548,7 @@ gridSizeLabel.textContent = `${currentGridSize} x ${currentGridSize}`
 // clear grid retain same size
 clearButton.addEventListener('click', () => {
     generateGrid(currentGridSize);
+    save();
     if (gridOn) {
         gridOnFunc(true);
     } else {
@@ -610,4 +647,13 @@ brushSizeField.addEventListener('change', () => {
 
 
 
-generateGrid(gridSize.value);
+if(localStorage.getItem('board') !== null) {
+    const pix = JSON.parse(localStorage.getItem('board'));
+    gridSize.value = pix['grid'];
+    currentGridSize = pix['grid'];
+    gridSizeLabel.textContent = `${pix['grid']} x ${pix['grid']}`
+    generateGrid(pix['grid'], pix, true);
+} else {
+    currentGridSize = pix['grid'];
+    generateGrid(gridSize.value);
+}
