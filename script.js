@@ -648,12 +648,15 @@ drawingBoard.addEventListener('mouseup', () => save())
 
 // load image or gennew
 if(localStorage.getItem('board') !== null) {
+    console.log('bet')
     const pix = JSON.parse(localStorage.getItem('board'));
     gridSize.value = pix['grid'];
     currentGridSize = pix['grid'];
     gridSizeLabel.textContent = `${pix['grid']} x ${pix['grid']}`
     generateGrid(pix['grid'], pix, true);
 } else {
-    currentGridSize = pix['grid'];
+    gridSize.value = gridSize.getAttribute('default');
+    currentGridSize = gridSize.value;
+    gridSizeLabel.textContent = `${currentGridSize} x ${currentGridSize}`
     generateGrid(gridSize.value);
 }
