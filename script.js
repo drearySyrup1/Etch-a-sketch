@@ -25,7 +25,6 @@ function generateGrid(size) {
 
             // for click coloring
             block.addEventListener('mousedown', e => {
-                hoverColor(block, true);
 
                 if (fillMode) {
                     fillModeFunction2(block, block.parentElement);
@@ -38,16 +37,18 @@ function generateGrid(size) {
             
             // for drag colloring
             block.addEventListener('mouseover', e => {
-                if (!mouseDown) hoverColor(block); 
+                hoverColor(block); 
                 
 
                 if (leftMouse && mouseDown) {
                         paint(block, brushSize);
+                        hoverColor(block); 
                 }
 
                 // right mouse drag delete
                 if (mouseDown && rightMouse) {
                     paint(block, brushSize, true);
+                    hoverColor(block); 
                 }
             })
 
